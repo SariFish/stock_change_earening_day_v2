@@ -161,7 +161,7 @@ if st.button("Show Charts"):
         month = dt.month
         color = month_colors.get(month, 'black')
         fig2.add_vline(
-            x=dt.to_pydatetime(),  # <-- conversion here!
+            x=str(dt.date()),  # <-- THE MAIN FIX HERE!
             line=dict(color=color, width=2, dash='dash'),
             annotation_text=dt.strftime('%b-%Y'),
             annotation_position='top left'
