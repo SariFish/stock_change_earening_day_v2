@@ -8,13 +8,21 @@ st.title("Stock Earnings Explorer")
 symbol = st.text_input("Enter a stock symbol (e.g., EQIX):", "EQIX").upper()
 
 if st.button("Show Charts"):
-    # --- First Chart: Percent Change After Earnings Reports ---
     ticker = yf.Ticker(symbol)
-    earnings = ticker.get_earnings_dates(limit=8)
-    earnings_dates = pd.to_datetime(earnings.index)
+
+    # Download historical price data (once)
     hist = ticker.history(period='3y').reset_index()
     hist['Date'] = pd.to_datetime(hist['Date'])
 
+    # Download earnings dates (once)
+    try:
+        earnings_df = ticker.get_earnings_dates(limit=12)
+        earnings_dates = pd.to_datetime(earnings_df.index)
+    except Exception as e:
+        st.error("Yahoo Finance is temporarily blocking data requests. Please wait a few minutes and try again.")
+        st.stop()
+
+    # --- First Chart: Percent Change After Earnings Reports ---
     offsets = {
         'Report Day': 0,
         'Mid 1st Week': 3,
@@ -134,13 +142,6 @@ if st.button("Show Charts"):
 
     # --- Second Chart: Stock Price and Earnings Dates (by Month Color) ---
 
-    df = yf.download(symbol, period='3y')
-    df = df.reset_index()
-
-    stock = yf.Ticker(symbol)
-    earnings_dates2 = stock.get_earnings_dates(limit=12)
-    earnings_dates2 = earnings_dates2.index
-
     month_colors = {
         1: 'blue',     2: 'green',   3: 'orange',  4: 'purple',
         5: 'cyan',     6: 'brown',   7: 'pink',    8: 'olive',
@@ -149,14 +150,14 @@ if st.button("Show Charts"):
 
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
-        x=df['Date'],
-        y=df['Close'],
+        x=hist['Date'],
+        y=hist['Close'],
         mode='lines',
         name='Close Price',
         line=dict(color='royalblue')
     ))
 
-    for dt in earnings_dates2:
+    for dt in earnings_dates:
         month = dt.month
         color = month_colors.get(month, 'black')
         fig2.add_vline(
