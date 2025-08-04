@@ -160,11 +160,20 @@ if st.button("Show Charts"):
     for dt in earnings_dates:
         month = dt.month
         color = month_colors.get(month, 'black')
-        fig2.add_vline(
-            x=str(dt.date()),  # <-- THE MAIN FIX HERE!
-            line=dict(color=color, width=2, dash='dash'),
-            annotation_text=dt.strftime('%b-%Y'),
-            annotation_position='top left'
+        dt_python = pd.to_datetime(dt).to_pydatetime()
+        fig2.add_shape(
+            type='line',
+            x0=dt_python, x1=dt_python,
+            y0=hist['Close'].min(), y1=hist['Close'].max(),
+            line=dict(color=color, width=2, dash='dash')
+        )
+        fig2.add_annotation(
+            x=dt_python,
+            y=hist['Close'].max(),
+            text=dt.strftime('%b-%Y'),
+            showarrow=False,
+            yshift=10,
+            font=dict(color=color, size=9)
         )
 
     # Add legend entries for each month
