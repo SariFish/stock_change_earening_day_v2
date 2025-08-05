@@ -279,8 +279,8 @@ if st.session_state["show_charts"]:
         title="Monthly High-Low Price Gap (%)",
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
-        width=1200,
-        height=600,
+        width=1600,
+        height=800,
         margin=dict(l=40, r=40, t=80, b=40)
     )
     st.plotly_chart(fig3, use_container_width=False)
