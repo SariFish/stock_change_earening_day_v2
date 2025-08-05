@@ -1,7 +1,7 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.graph_objs as go
 
 st.title("Stock Earnings Explorer")
 
@@ -9,20 +9,19 @@ symbol = st.text_input("Enter a stock symbol (e.g., EQIX):", "EQIX").upper()
 
 if st.button("Show Charts"):
     ticker = yf.Ticker(symbol)
-
-    # Download historical price data (once)
+    # --- Get 3y historical data ---
     hist = ticker.history(period='3y').reset_index()
     hist['Date'] = pd.to_datetime(hist['Date'])
 
-    # Download earnings dates (once)
+    # --- Get earnings dates ---
     try:
         earnings_df = ticker.get_earnings_dates(limit=12)
         earnings_dates = pd.to_datetime(earnings_df.index)
-    except Exception as e:
+    except Exception:
         st.error("Yahoo Finance is temporarily blocking data requests. Please wait a few minutes and try again.")
         st.stop()
 
-    # --- First Chart: Percent Change After Earnings Reports ---
+    # === Chart 1: Percent Change After Earnings Reports ===
     offsets = {
         'Report Day': 0,
         'Mid 1st Week': 3,
@@ -51,14 +50,9 @@ if st.button("Show Charts"):
             if base_row.empty:
                 continue
         base_price = float(base_row['Close'].iloc[0])
-        y_pct = []
-        styles = []
-        hover_dates = []
-
+        y_pct, styles, hover_dates = [], [], []
         for label, days in offsets.items():
-            found = False
-            min_days_diff = None
-            best_price = None
+            found, min_days_diff, best_price = False, None, None
             for diff in range(0, 4):
                 for sign in [+1, -1]:
                     candidate_date = report_date + pd.Timedelta(days=days + sign * diff)
@@ -71,7 +65,6 @@ if st.button("Show Charts"):
                             min_days_diff = days_diff
                             best_price = price
                             best_diff = days_diff
-                            best_candidate_date = candidate_date
                             best_actual_date = candidate_date.date()
                 if found:
                     break
@@ -140,7 +133,7 @@ if st.button("Show Charts"):
     st.subheader("1. Percent Change After Earnings Reports")
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- Second Chart: Stock Price and Earnings Dates (by Month Color) ---
+    # === Chart 2: Stock Price and Earnings Dates (by Month Color) ===
 
     month_colors = {
         1: 'blue',     2: 'green',   3: 'orange',  4: 'purple',
@@ -176,10 +169,8 @@ if st.button("Show Charts"):
             font=dict(color=color, size=9)
         )
 
-    # Add legend entries for each month
     month_legend = [go.Scatter(
-        x=[None],
-        y=[None],
+        x=[None], y=[None],
         mode='markers',
         marker=dict(size=10, color=month_colors[m]),
         legendgroup=month_colors[m],
@@ -197,6 +188,85 @@ if st.button("Show Charts"):
         legend_title="Legend",
         margin=dict(t=60, r=60)
     )
-
     st.subheader("2. Stock Price and Earnings Dates (by Month Color)")
     st.plotly_chart(fig2, use_container_width=True)
+
+    # === Chart 3: Monthly High-Low Price Gap (%) by Month (Interactive) ===
+
+    df = hist.copy()
+    df['YearMonth'] = df['Date'].dt.to_period('M')
+    df['MonthNum'] = df['Date'].dt.month
+    df['WeekOfMonth'] = ((df['Date'].dt.day - 1) // 7) + 1
+
+    monthly_summary = []
+    for period, group in df.groupby('YearMonth'):
+        try:
+            high = group['High'].max()
+            low = group['Low'].min()
+            gap_pct = (high - low) / high * 100
+            high_row = group[group['High'] == high].iloc[0]
+            low_row = group[group['Low'] == low].iloc[0]
+            summary = {
+                'YearMonth': str(period),
+                'High': high,
+                'High Date': high_row['Date'],
+                'Low': low,
+                'Low Date': low_row['Date'],
+                'Gap %': gap_pct,
+                'Low Week': low_row['WeekOfMonth'],
+                'MonthNum': int(high_row['MonthNum']),
+            }
+            monthly_summary.append(summary)
+        except Exception:
+            pass
+
+    monthly_summary_df = pd.DataFrame(monthly_summary)
+    monthly_summary_df['hovertext'] = monthly_summary_df.apply(
+        lambda row: (
+            f"Month: {row['YearMonth']}<br>"
+            f"Gap: {row['Gap %']:.2f}%<br>"
+            f"High: {row['High Date'].date()} (${row['High']:.2f})<br>"
+            f"Low: {row['Low Date'].date()} (${row['Low']:.2f})<br>"
+            f"Low Week: {int(row['Low Week'])}"
+        ),
+        axis=1
+    )
+
+    st.subheader("3. Monthly High-Low Price Gap (%) by Month (Interactive)")
+    months_map = {i: pd.Timestamp(month=i, day=1, year=2024).strftime('%B') for i in range(1, 13)}
+    month_select = st.selectbox(
+        "Select Month (all years):",
+        options=sorted(monthly_summary_df['MonthNum'].unique()),
+        format_func=lambda x: months_map[x]
+    )
+
+    new_colors = [
+        "tomato" if mn == month_select else "lightgray"
+        for mn in monthly_summary_df['MonthNum']
+    ]
+    new_texts = [
+        f"{gap:.2f}%" if mn == month_select else ""
+        for gap, mn in zip(monthly_summary_df['Gap %'], monthly_summary_df['MonthNum'])
+    ]
+
+    fig3 = go.Figure([
+        go.Bar(
+            x=monthly_summary_df['YearMonth'],
+            y=monthly_summary_df['Gap %'],
+            marker={'color': new_colors},
+            customdata=monthly_summary_df['MonthNum'],
+            hovertext=monthly_summary_df['hovertext'],
+            text=new_texts,
+            textposition="auto"
+        )
+    ])
+    fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
+    fig3.update_layout(
+        title="Monthly High-Low Price Gap (%)",
+        xaxis_title="Year-Month",
+        yaxis_title="Gap (%)",
+        width=1200,
+        height=600,
+        margin=dict(l=40, r=40, t=80, b=40)
+    )
+    st.plotly_chart(fig3, use_container_width=True)
