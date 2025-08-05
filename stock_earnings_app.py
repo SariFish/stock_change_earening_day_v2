@@ -275,6 +275,21 @@ if st.session_state["show_charts"]:
         )
     ])
     fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
+    
+    st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem;
+    }
+    .element-container .js-plotly-plot, .stPlotlyChart {
+        min-width: 1500px !important;
+        min-height: 900px !important;
+        height: 900px !important;
+        width: 1500px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     fig3.update_layout(
         title="Monthly High-Low Price Gap (%)",
         xaxis_title="Year-Month",
