@@ -271,6 +271,7 @@ if st.session_state["show_charts"]:
             marker={'color': new_colors},
             customdata=monthly_summary_df['MonthNum'],
             hovertext=monthly_summary_df['hovertext'],
+            size = 20,
             text=new_texts,
             textposition="auto"
         )
