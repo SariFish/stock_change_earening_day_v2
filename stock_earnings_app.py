@@ -275,7 +275,15 @@ if st.session_state["show_charts"]:
         )
     ])
     fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
-    
+    fig3.update_layout(
+        title="Monthly High-Low Price Gap (%)",
+        xaxis_title="Year-Month",
+        yaxis_title="Gap (%)",
+        width=1600,
+        height=800,
+        margin=dict(l=40, r=40, t=80, b=40)
+    )
+
     st.markdown("""
     <style>
     .block-container {
@@ -289,13 +297,4 @@ if st.session_state["show_charts"]:
     }
     </style>
     """, unsafe_allow_html=True)
-
-    fig3.update_layout(
-        title="Monthly High-Low Price Gap (%)",
-        xaxis_title="Year-Month",
-        yaxis_title="Gap (%)",
-        width=1600,
-        height=800,
-        margin=dict(l=40, r=40, t=80, b=40)
-    )
     st.plotly_chart(fig3, use_container_width=False)
