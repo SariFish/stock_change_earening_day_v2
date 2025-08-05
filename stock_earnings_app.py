@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objs as go
 
 st.title("Stock Earnings Explorer")
+st.set_page_config(layout="wide")
 
 # שמור ב-session_state אם כבר הוצגו הגרפים
 if "show_charts" not in st.session_state:
@@ -281,7 +282,7 @@ if st.session_state["show_charts"]:
         yaxis_title="Gap (%)",
         # width=1600,
         # height=800,
-        margin=dict(t=60, r=60)
+        margin=dict(l=40, r=40, t=80, b=40)
     )
 
-    st.plotly_chart(fig3, use_container_width=False)
+    st.plotly_chart(fig3, use_container_width=True)
