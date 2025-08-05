@@ -5,9 +5,23 @@ import plotly.graph_objs as go
 
 st.title("Stock Earnings Explorer")
 
+# שמור ב-session_state אם כבר הוצגו הגרפים
+if "show_charts" not in st.session_state:
+    st.session_state["show_charts"] = False
+if "last_symbol" not in st.session_state:
+    st.session_state["last_symbol"] = ""
+
 symbol = st.text_input("Enter a stock symbol (e.g., EQIX):", "EQIX").upper()
 
+# אם שונה הסימבול, אפס כפתור
+if st.session_state["last_symbol"] != symbol:
+    st.session_state["show_charts"] = False
+    st.session_state["last_symbol"] = symbol
+
 if st.button("Show Charts"):
+    st.session_state["show_charts"] = True
+
+if st.session_state["show_charts"]:
     ticker = yf.Ticker(symbol)
     # --- Get 3y historical data ---
     hist = ticker.history(period='3y').reset_index()
@@ -266,7 +280,7 @@ if st.button("Show Charts"):
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
         width=1200,
-        height=700,   # bigger height for clarity
+        height=600,
         margin=dict(l=40, r=40, t=80, b=40)
     )
     st.plotly_chart(fig3, use_container_width=True)
