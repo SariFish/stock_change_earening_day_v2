@@ -271,9 +271,12 @@ if st.session_state["show_charts"]:
             marker={'color': new_colors},
             customdata=monthly_summary_df['MonthNum'],
             hovertext=monthly_summary_df['hovertext'],
-            size = 20,
             text=new_texts,
-            textposition="auto"
+            textposition="auto",
+            textfont=dict(
+            size=20,    
+            color="black"
+        )
         )
     ])
     fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
