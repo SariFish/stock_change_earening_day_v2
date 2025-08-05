@@ -283,4 +283,4 @@ if st.session_state["show_charts"]:
         height=600,
         margin=dict(l=40, r=40, t=80, b=40)
     )
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=False)
