@@ -266,7 +266,7 @@ if st.button("Show Charts"):
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
         width=1200,
-        height=600,
+        height=700,   # bigger height for clarity
         margin=dict(l=40, r=40, t=80, b=40)
     )
     st.plotly_chart(fig3, use_container_width=True)
