@@ -296,7 +296,7 @@ if st.session_state["show_charts"]:
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
         width=1600,
-        height=800,
+        height=600,
         margin=dict(l=40, r=40, t=80, b=40)
     )
 
