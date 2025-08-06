@@ -286,7 +286,7 @@ fig3 = go.Figure([
     )
 ])
 
-    fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
+fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
     fig3.update_layout(
         title="Monthly High-Low Price Gap (%)",
         xaxis_title="Year-Month",
