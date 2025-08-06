@@ -6,7 +6,7 @@ import plotly.graph_objs as go
 st.set_page_config(layout="wide")
 st.title("Stock Earnings Explorer")
 
-# Track session state for chart display and last symbol
+# Session state
 if "show_charts" not in st.session_state:
     st.session_state["show_charts"] = False
 if "last_symbol" not in st.session_state:
@@ -14,7 +14,6 @@ if "last_symbol" not in st.session_state:
 
 symbol = st.text_input("Enter a stock symbol (e.g., EQIX):", "EQIX").upper()
 
-# Reset chart button if symbol changes
 if st.session_state["last_symbol"] != symbol:
     st.session_state["show_charts"] = False
     st.session_state["last_symbol"] = symbol
@@ -24,11 +23,9 @@ if st.button("Show Charts"):
 
 if st.session_state["show_charts"]:
     ticker = yf.Ticker(symbol)
-    # Download 3y historical data
     hist = ticker.history(period='3y').reset_index()
     hist['Date'] = pd.to_datetime(hist['Date'])
 
-    # Get earnings dates
     try:
         earnings_df = ticker.get_earnings_dates(limit=12)
         earnings_dates = pd.to_datetime(earnings_df.index)
@@ -36,7 +33,7 @@ if st.session_state["show_charts"]:
         st.error("Yahoo Finance is temporarily blocking data requests. Please wait a few minutes and try again.")
         st.stop()
 
-    # === Chart 1: Percent Change After Earnings Reports ===
+    # Chart 1: Percent Change After Earnings Reports
     offsets = {
         'Report Day': 0,
         'Mid 1st Week': 3,
@@ -49,7 +46,6 @@ if st.session_state["show_charts"]:
     x_labels = list(offsets.keys())
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f']
     fig = go.Figure()
-
     def get_style(days_diff):
         if days_diff <= 1:
             return 'solid'
@@ -148,8 +144,7 @@ if st.session_state["show_charts"]:
     st.subheader("1. Percent Change After Earnings Reports")
     st.plotly_chart(fig, use_container_width=True)
 
-    # === Chart 2: Stock Price and Earnings Dates (by Month Color) ===
-
+    # Chart 2: Stock Price and Earnings Dates (by Month Color)
     month_colors = {
         1: 'blue',     2: 'green',   3: 'orange',  4: 'purple',
         5: 'cyan',     6: 'brown',   7: 'pink',    8: 'olive',
@@ -206,8 +201,7 @@ if st.session_state["show_charts"]:
     st.subheader("2. Stock Price and Earnings Dates (by Month Color)")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # === Chart 3: Monthly High-Low Price Gap (%) by Month (Interactive) ===
-
+    # Chart 3: Monthly High-Low Price Gap (%) by Month (Interactive)
     df = hist.copy()
     df['YearMonth'] = df['Date'].dt.to_period('M')
     df['MonthNum'] = df['Date'].dt.month
@@ -221,7 +215,6 @@ if st.session_state["show_charts"]:
             gap_pct = (high - low) / high * 100
             high_row = group[group['High'] == high].iloc[0]
             low_row = group[group['Low'] == low].iloc[0]
-            # HighFirst: True if high comes before low in the month
             high_first = high_row['Date'] < low_row['Date']
             summary = {
                 'YearMonth': str(period),
@@ -239,7 +232,6 @@ if st.session_state["show_charts"]:
             pass
 
     monthly_summary_df = pd.DataFrame(monthly_summary)
-    # Add the order info to the hover text
     monthly_summary_df['hovertext'] = monthly_summary_df.apply(
         lambda row: (
             f"Month: {row['YearMonth']}<br>"
@@ -260,11 +252,9 @@ if st.session_state["show_charts"]:
         format_func=lambda x: months_map[x]
     )
 
-    # Define bar colors by HighFirst, highlight selected month as tomato
     def get_bar_color(row, selected_month):
-        if row['MonthNum'] == selected_month:
-            return "tomato"
-        elif row['HighFirst']:
+        # Main color by HighFirst, not by selection
+        if row['HighFirst']:
             return "#B4DAF5"  # light blue: High before Low
         else:
             return "#FFD8B4"  # light orange: Low before High
@@ -275,6 +265,15 @@ if st.session_state["show_charts"]:
         for gap, mn in zip(monthly_summary_df['Gap %'], monthly_summary_df['MonthNum'])
     ]
 
+    # Find selected bar index
+    try:
+        selected_idx = monthly_summary_df.index[monthly_summary_df['MonthNum'] == month_select][0]
+        x_selected = monthly_summary_df.loc[selected_idx, 'YearMonth']
+        y_selected = monthly_summary_df.loc[selected_idx, 'Gap %']
+    except Exception:
+        x_selected = None
+        y_selected = None
+
     fig3 = go.Figure([
         go.Bar(
             x=monthly_summary_df['YearMonth'],
@@ -284,12 +283,22 @@ if st.session_state["show_charts"]:
             hovertext=monthly_summary_df['hovertext'],
             text=new_texts,
             textposition="auto",
-            textfont=dict(
-                size=20,    
-                color="black"
-            )
+            textfont=dict(size=20, color="black")
         )
     ])
+    # Add red outline for the selected bar
+    if x_selected is not None:
+        bar_width = 0.45
+        x_idx = list(monthly_summary_df['YearMonth']).index(x_selected)
+        # The outline is a rectangle around the bar
+        fig3.add_shape(
+            type="rect",
+            x0=x_idx - bar_width / 2, x1=x_idx + bar_width / 2,
+            y0=0, y1=y_selected,
+            line=dict(color="red", width=4),
+            fillcolor="rgba(0,0,0,0)",
+            layer="above"
+        )
     fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
     fig3.update_layout(
         title="Monthly High-Low Price Gap (%)",
@@ -297,7 +306,8 @@ if st.session_state["show_charts"]:
         yaxis_title="Gap (%)",
         width=1600,
         height=800,
-        margin=dict(l=40, r=40, t=80, b=40)
+        margin=dict(l=40, r=40, t=80, b=40),
+        bargap=0.20,
     )
 
     st.plotly_chart(fig3, use_container_width=False)
