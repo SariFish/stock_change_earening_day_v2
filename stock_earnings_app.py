@@ -287,7 +287,7 @@ fig3 = go.Figure([
 ])
 
 fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
-    fig3.update_layout(
+fig3.update_layout(
         title="Monthly High-Low Price Gap (%)",
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
@@ -296,4 +296,4 @@ fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
         margin=dict(l=40, r=40, t=80, b=40)
     )
 
-    st.plotly_chart(fig3, use_container_width=False)
+st.plotly_chart(fig3, use_container_width=False)
