@@ -279,10 +279,7 @@ if st.session_state["show_charts"]:
         go.Bar(
             x=monthly_summary_df['YearMonth'],
             y=monthly_summary_df['Gap %'],
-            marker={
-            'color': bar_colors,
-            'opacity': bar_opacity
-            },
+            marker={'color': new_colors},
             customdata=monthly_summary_df['MonthNum'],
             hovertext=monthly_summary_df['hovertext'],
             text=new_texts,
