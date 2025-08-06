@@ -3,10 +3,10 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objs as go
 
-st.title("Stock Earnings Explorer")
 st.set_page_config(layout="wide")
+st.title("Stock Earnings Explorer")
 
-# שמור ב-session_state אם כבר הוצגו הגרפים
+# Track session state for chart display and last symbol
 if "show_charts" not in st.session_state:
     st.session_state["show_charts"] = False
 if "last_symbol" not in st.session_state:
@@ -14,7 +14,7 @@ if "last_symbol" not in st.session_state:
 
 symbol = st.text_input("Enter a stock symbol (e.g., EQIX):", "EQIX").upper()
 
-# אם שונה הסימבול, אפס כפתור
+# Reset chart button if symbol changes
 if st.session_state["last_symbol"] != symbol:
     st.session_state["show_charts"] = False
     st.session_state["last_symbol"] = symbol
@@ -24,11 +24,11 @@ if st.button("Show Charts"):
 
 if st.session_state["show_charts"]:
     ticker = yf.Ticker(symbol)
-    # --- Get 3y historical data ---
+    # Download 3y historical data
     hist = ticker.history(period='3y').reset_index()
     hist['Date'] = pd.to_datetime(hist['Date'])
 
-    # --- Get earnings dates ---
+    # Get earnings dates
     try:
         earnings_df = ticker.get_earnings_dates(limit=12)
         earnings_dates = pd.to_datetime(earnings_df.index)
@@ -221,6 +221,8 @@ if st.session_state["show_charts"]:
             gap_pct = (high - low) / high * 100
             high_row = group[group['High'] == high].iloc[0]
             low_row = group[group['Low'] == low].iloc[0]
+            # HighFirst: True if high comes before low in the month
+            high_first = high_row['Date'] < low_row['Date']
             summary = {
                 'YearMonth': str(period),
                 'High': high,
@@ -230,18 +232,21 @@ if st.session_state["show_charts"]:
                 'Gap %': gap_pct,
                 'Low Week': low_row['WeekOfMonth'],
                 'MonthNum': int(high_row['MonthNum']),
+                'HighFirst': high_first
             }
             monthly_summary.append(summary)
         except Exception:
             pass
 
     monthly_summary_df = pd.DataFrame(monthly_summary)
+    # Add the order info to the hover text
     monthly_summary_df['hovertext'] = monthly_summary_df.apply(
         lambda row: (
             f"Month: {row['YearMonth']}<br>"
             f"Gap: {row['Gap %']:.2f}%<br>"
             f"High: {row['High Date'].date()} (${row['High']:.2f})<br>"
             f"Low: {row['Low Date'].date()} (${row['Low']:.2f})<br>"
+            f"Order: {'High before Low' if row['HighFirst'] else 'Low before High'}<br>"
             f"Low Week: {int(row['Low Week'])}"
         ),
         axis=1
@@ -255,10 +260,16 @@ if st.session_state["show_charts"]:
         format_func=lambda x: months_map[x]
     )
 
-    new_colors = [
-        "tomato" if mn == month_select else "lightgray"
-        for mn in monthly_summary_df['MonthNum']
-    ]
+    # Define bar colors by HighFirst, highlight selected month as tomato
+    def get_bar_color(row, selected_month):
+        if row['MonthNum'] == selected_month:
+            return "tomato"
+        elif row['HighFirst']:
+            return "#B4DAF5"  # light blue: High before Low
+        else:
+            return "#FFD8B4"  # light orange: Low before High
+
+    new_colors = [get_bar_color(row, month_select) for idx, row in monthly_summary_df.iterrows()]
     new_texts = [
         f"{gap:.2f}%" if mn == month_select else ""
         for gap, mn in zip(monthly_summary_df['Gap %'], monthly_summary_df['MonthNum'])
@@ -274,9 +285,9 @@ if st.session_state["show_charts"]:
             text=new_texts,
             textposition="auto",
             textfont=dict(
-            size=20,    
-            color="black"
-        )
+                size=20,    
+                color="black"
+            )
         )
     ])
     fig3.update_traces(hovertemplate='%{hovertext}<extra></extra>')
@@ -284,9 +295,9 @@ if st.session_state["show_charts"]:
         title="Monthly High-Low Price Gap (%)",
         xaxis_title="Year-Month",
         yaxis_title="Gap (%)",
-        # width=1600,
-        # height=800,
+        width=1600,
+        height=800,
         margin=dict(l=40, r=40, t=80, b=40)
     )
 
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=False)
