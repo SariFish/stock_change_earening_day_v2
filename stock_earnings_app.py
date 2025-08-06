@@ -261,11 +261,11 @@ if st.session_state["show_charts"]:
     )
 
     # Define bar colors by HighFirst, highlight selected month as tomato
-    def get_bar_color(row, selected_month):
-    if row['HighFirst']:
-        return "#B4DAF5"  # light blue
-    else:
-        return "#FFD8B4"  # light orange
+        def get_bar_color(row, selected_month):
+            if row['HighFirst']:
+                return "#B4DAF5"  # light blue
+            else:
+                return "#FFD8B4"  # light orange
 
 bar_colors = [get_bar_color(row, month_select) for idx, row in monthly_summary_df.iterrows()]
 bar_opacity = [1.0 if row['MonthNum'] == month_select else 0.6 for idx, row in monthly_summary_df.iterrows()]
