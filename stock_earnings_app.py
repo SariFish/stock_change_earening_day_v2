@@ -268,9 +268,6 @@ if st.session_state["show_charts"]:
             return "#B4DAF5"  # light blue: High before Low
         else:
             return "#FFD8B4"  # light orange: Low before High
-    # Create bar color and opacity lists
-     bar_colors = [get_bar_color(row, month_select) for idx, row in monthly_summary_df.iterrows()]
-     bar_opacity = [1.0 if row['MonthNum'] == month_select else 0.6 for idx, row in monthly_summary_df.iterrows()]
 
     new_colors = [get_bar_color(row, month_select) for idx, row in monthly_summary_df.iterrows()]
     new_texts = [
